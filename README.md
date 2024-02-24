@@ -1,6 +1,6 @@
 # Introduction
 
-The goal of this project is to study computational networks that have biologically feasible learning mechanisms or structures. Most existing models with biologically features either have very loose analogues to biological realizations or do not perform any useful learning task. How can we make artificial models of neural networks that are biologically plausible while also achieving good performance on some downstream task?
+The goal of this project is to study computational networks that have biologically feasible learning mechanisms or structures. Most existing models with biologically feasible features either have very loose analogues to biological realizations or do not perform any useful learning task. How can we make artificial models of neural networks that are biologically plausible while also achieving good performance on some downstream task?
 
 # Idea
 
