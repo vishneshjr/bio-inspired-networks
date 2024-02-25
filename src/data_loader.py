@@ -15,8 +15,6 @@ def load_data():
 
 
 def load_data_wrapper():
-    print("In this file")
-    print(os.getcwd())
     train, val, test = load_data()
     train_input = [np.reshape(x, (len(x), 1)) for x in train[0]] # Reshape input (n, ) to (n, 1)
     train_result = [one_hot_encode(y) for y in train[1]]
