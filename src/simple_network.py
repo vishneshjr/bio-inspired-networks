@@ -3,12 +3,13 @@ import random
 
 
 class Network():
-    def __init__(self, sizes, activation = "Sigmoid"):
+    def __init__(self, sizes, activation = "Sigmoid", cost = "MSE"):
         self.sizes = sizes
         self.num_layers = len(sizes)
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(x, y) for x, y in zip(sizes[1:], sizes[:-1])] # Second layer parameter x comes before first layer parameter y to enable matrix multiplication
         self.activation_type = activation
+        self.cost = cost
 
     def forward(self, x):
         for i in range(self.num_layers - 1):
@@ -56,53 +57,52 @@ class Network():
         return np.mean(preds)
 
     def update(self, batch, alpha):
+
+        # Create matrices that store the gradients
         delta_b = [np.zeros(b.shape) for b in self.biases]
         delta_w = [np.zeros(w.shape) for w in self.weights]
+        x,y = zip(*batch)
 
-        for x,y in batch:
-            del_b, del_w = self.backprop(x, y)
-            delta_b = [change_b + new_change_b for change_b, new_change_b in zip(delta_b, del_b)]
-            delta_w = [change_w + new_change_w for change_w, new_change_w in zip(delta_w, del_w)]
-        
+        X = np.hstack(x)
+        Y = np.hstack(y)
+
+        delta_b, delta_w = self.backprop(X, Y)
+
+        # Tale the average of the gradients and then update each weight matrix and bias vector
         self.weights = [w - alpha*(delw)/len(batch) for w, delw in zip(self.weights, delta_w)]
         self.biases = [b - alpha*(delb)/len(batch) for b, delb in zip(self.biases, delta_b)]
         
     def backprop(self, x, y):
-        """Return a tuple ``(nabla_b, nabla_w)`` representing the
-        gradient for the cost function C_x.  ``nabla_b`` and
-        ``nabla_w`` are layer-by-layer lists of numpy arrays, similar
-        to ``self.biases`` and ``self.weights``."""
-        nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.weights]
-        # feedforward
-        activation = x
-        activations = [x] # list to store all the activations, layer by layer
-        zs = [] # list to store all the z vectors, layer by layer
+
+
+        delta_b = [np.zeros(b.shape) for b in self.biases]
+        delta_w = [np.zeros(w.shape) for w in self.weights]
+
+        # Forward Pass
+        a = x
+        activations = [x]
+        zs = []
         for b, w in zip(self.biases, self.weights):
-            z = np.dot(w, activation) + b
+            z = np.dot(w, a) + b
             zs.append(z)
-            activation = self.sigmoid(z)
-            activations.append(activation)
-        # backward pass
-        delta = self.cost_derivative(activations[-1], y) * \
-            self.activation_derivative(zs[-1])
-        nabla_b[-1] = delta
-        nabla_w[-1] = np.dot(delta, activations[-2].transpose())
-        # Note that the variable l in the loop below is used a little
-        # differently to the notation in Chapter 2 of the book.  Here,
-        # l = 1 means the last layer of neurons, l = 2 is the
-        # second-last layer, and so on.  It's a renumbering of the
-        # scheme in the book, used here to take advantage of the fact
-        # that Python can use negative indices in lists.
-        for l in range(2, self.num_layers):
-            z = zs[-l]
+            a = self.activation(z)
+            activations.append(a)
+
+        # Backward Pass  
+        for i in range(1, self.num_layers):
+            z = zs[-i]
             sp = self.activation_derivative(z)
-            delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
-            nabla_b[-l] = delta
-            nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
-        return (nabla_b, nabla_w)
+            if (i == 1):
+                delta = self.cost_derivative(activations[-1], y) * self.activation_derivative(zs[-1])
+            else:
+                delta = np.dot(self.weights[-i+1].transpose(), delta) * sp
+            delta_b[-i] = np.sum(delta, axis = -1, keepdims = True)
+            delta_w[-i] = np.dot(delta, activations[-i-1].transpose())
+
+        return (delta_b, delta_w)
 
     def cost_derivative(self, output_activations, y):
-        """Return the vector of partial derivatives \partial C_x /
-        \partial a for the output activations."""
-        return (output_activations-y)
+        if (self.cost == "MSE"):
+            return (output_activations-y)
+        
+        raise Exception("Cost Function Type Does Not Exist")
